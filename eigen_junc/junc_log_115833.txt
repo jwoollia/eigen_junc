@@ -1,0 +1,16 @@
+  ... random number seed ...       471633      620099
+ ... replicates    ...        1
+ ... generations   ...       10
+ ... individuals   ...        4
+ ... length (M)    ...   1.00
+ ... mating system ... ms
+ ... gametes are being sampled for checking construction
+ ... tracking single gamete from base
+  ... pass_gamete problem _a_ ...            3  0.381713330021888     
+  0.568316017420431       0.813353843118564     
+  0.0000  1.0000
+       1       0
+  0.0000  1.0000
+       1       0
+  0.0000  1.0000
+       1       0

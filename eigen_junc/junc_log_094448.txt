@@ -1,0 +1,12 @@
+  ... random number seed ...       121471      314193
+ ... replicates    ...        2
+ ... generations   ...       40
+ ... individuals   ...       10
+ ... length (M)    ...   0.50
+ ... mating system ... ms
+094448.341 ... finished replicate ...     1
+094448.388 ... finished replicate ...     2
+check Poisson ... 
+ 0.6181 0.3038 0.0675 0.0100 0.0006 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
+true Poisson  ... 
+ 0.6065 0.3033 0.0758 0.0126 0.0016 0.0002 0.0000 0.0000 0.0000 0.0000 0.0000

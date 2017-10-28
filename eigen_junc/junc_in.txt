@@ -1,0 +1,7 @@
+1		replicates
+10		generations
+4		individuals
+1.0		chromosome length
+ms		mating system, di or dp or ms or mx
+.true.		test passing of gametes 
+.true.		track only single base allele

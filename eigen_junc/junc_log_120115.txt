@@ -1,0 +1,13 @@
+  ... random number seed ...        37859      374893
+ ... replicates    ...        1
+ ... generations   ...       10
+ ... individuals   ...        4
+ ... length (M)    ...   1.00
+ ... mating system ... ms
+ ... gametes are being sampled for checking construction
+ ... tracking single gamete from base
+120115.960 ... finished replicate ...     1
+check Poisson ... 
+ 0.3875 0.3625 0.1750 0.0625 0.0125 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
+true Poisson  ... 
+ 0.3679 0.3679 0.1839 0.0613 0.0153 0.0031 0.0005 0.0001 0.0000 0.0000 0.0000

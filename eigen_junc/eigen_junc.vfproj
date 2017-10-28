@@ -26,5 +26,11 @@
 	<Files>
 		<Filter Name="Header Files" Filter="fi;fd;h;inc"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
-		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl"/></Files>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<File RelativePath=".\eigen_junc.f90"/>
+		<File RelativePath=".\jaw_seeds.f90"/>
+		<File RelativePath=".\mat_ops.f90"/>
+		<File RelativePath=".\parameters.f90"/>
+		<File RelativePath=".\sort_kit.f90"/>
+		<File RelativePath=".\utilities.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>
