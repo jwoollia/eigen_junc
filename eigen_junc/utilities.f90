@@ -5,11 +5,206 @@ implicit none
 integer, parameter, private :: dp=kind(0.0d0)
 !
 contains
+!
+!===================
+subroutine matings()            ! change to subroutine
+!===================
+integer :: i
+real(kind=dp) :: u
+do i=1,ni ! for each newborn individual
+    gp(i)%id=i
+    select case (msys)
+    case('di') ! dioecious
+            call random_number(u) 
+            gp(i)%ped(1)=ceiling(u*real(ni/2)) ! choose a sire
+            call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
+            call random_number(u) ! to choose a dam
+            gp(i)%ped(2)=(ni/2)+ceiling(u*real(ni/2)) ! choose a dam
+            call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
+        case('ms') ! monoecious selfing ... true random
+            call random_number(u) ! to choose a sire
+            gp(i)%ped(1)=ceiling(u*real(ni))
+            call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
+            call random_number(u) ! to choose a dam
+            gp(i)%ped(2)=ceiling(u*real(ni)) ! choose a dam
+            call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
+        case('mx') ! monoecious but no selfing
+            call random_number(u) ! to choose a sire
+            gp(i)%ped(1)=ceiling(u*real(ni))
+            call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
+            call random_number(u) ! to choose a dam
+            gp(i)%ped(2)=ceiling(u*real(ni-1)) ! choose a dam
+            if(gp(i)%ped(2)>=gp(i)%ped(1)) gp(i)%ped(2)=gp(i)%ped(2)+1 ! shift up to avoid and account for selfing
+            call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
+        case default
+            stop ' ... stopping: error nominating mating system!'
+    end select
+end do
+end subroutine matings
+!
+!=======================================
+subroutine pass_gamete(parent,goff,gmen)
+!=======================================
+integer, intent(in) :: parent
+type(gamete), intent(out) :: goff,gmen
+type(gamete) :: gsel,galt
+integer :: nc,jd,jg,joff,jmen,jsel,jalt,jact
+real(kind=dp), dimension(:), allocatable :: xc
+real(kind=dp) :: u
+! set up gametes
+call goff%gnull(cl)
+if(ibda) call gmen%gnull(cl)
+! set up recombinations
+nc=crossovers(cl) ! find number of crossovers
+poisson_test(min(nc,10))=poisson_test(min(nc,10))+1.0d0 ! accumulate for Poisson check
+allocate(xc(nc+1)) 
+call map_crossings(cl,xc) ! to obtain positions
+! determine starting gamete for x=0
+call random_number(u)
+jg=1; if(u<0.5d0) jg=2
+gsel=xgp(parent)%htype(jg); galt=xgp(parent)%htype(3-jg)
+! initiate goff & gmen if required
+goff%junc(1)%anc=gsel%junc(1)%anc
+if(ibda) gmen%junc(1)%anc=wh(gsel%junc(1)%anc)-wh(galt%junc(1)%anc)
+! initiate transfer
+jsel=2; jalt=2; jd=1 ! set up so that jsel and jalt indicate positions ahead of joff, jd counts the breaks
+gamete_scan: do     
+    if(jsel>=gsel%nj.and.jalt>=galt%nj.and.jd>=size(xc)) exit gamete_scan ! only at end the counters will all be at maximum values ... each array has precisely one value >= cl
+    jact=sum(minloc((/gsel%junc(jsel)%pos,galt%junc(jalt)%pos,xc(jd)/)))
+    select case (jact)
+    case (1)
+        call goff%gappend(gsel%junc(jsel)) ! transfers junction
+        if(equal_junction(gsel%junc(jsel),galt%junc(jalt))) jalt=jalt+1 ! keep jalt ahead
+        if(ibda) call ms_calc(gmen,gsel%junc(jsel)%pos,gsel%junc(jsel)%anc,galt%junc(jalt-1)%anc) 
+        jsel=jsel+1 ! move on to next junction  
+    case (2) ! junction in alternative, update gmen, not goff
+        if(equal_junction(gsel%junc(jsel),galt%junc(jalt))) jsel=jsel+1 ! keep jsel ahead
+        if(ibda) call ms_calc(gmen,galt%junc(jalt)%pos,gsel%junc(jsel-1)%anc,galt%junc(jalt)%anc) 
+        jalt=jalt+1 ! move on to next alternative junction 
+    case (3) ! crossover
+        call swap(gsel,galt)
+        call swap(jsel,jalt)
+        ! junction formed only if different, i.e. if(gsel%junc(jsel-1)%anc/=galt%junc(jalt-1)%anc) but this is ignored
+        call goff%gappend( junction(xc(jd),gsel%junc(jsel-1)%anc) )
+        if(ibda) call ms_calc(gmen,xc(jd),gsel%junc(jsel-1)%anc,galt%junc(jalt-1)%anc)  ! note both jsel and jalt are ahead
+        jd=jd+1
+    end select
+end do gamete_scan
+call goff%greduce()
+if(.not.goff%gordered()) call gam_prob(goff,gsel,galt,xc,'a','y')
+if(ibda) call gmen%greduce()
+! monitoring report    
+if(pg_test) then 
+    call random_number(u) ! to determine whether this gamete is reported
+    if(u<2.d-2) then
+        write(12,'(/a,7i6)') ' ... test ... ',ir,ig,parent,xgp(parent)%htype(:)%nj
+        call xgp(parent)%htype(1)%goutput(12)
+        call xgp(parent)%htype(2)%goutput(12)
+        write(12,'(a,i4/10f8.4)') ' ... crossovers ... ',nc,xc(:)  ! for gamete check
+        call goff%goutput(12)
+        if(ibda) call gmen%goutput(12)
+    end if
+end if  
+! tidy up
+deallocate(xc)   
+end subroutine pass_gamete
+!
+!=================================================
+subroutine gam_prob(gsel,galt,goff,xc,etype,astop)
+!=================================================
+type(gamete), intent(in) :: goff,gsel,galt
+real(kind=dp), dimension(:), intent(in) :: xc
+character(len=*) :: etype,astop
+write(11,'(a,a,a,i4,10f6.4)') " ... pass_gamete problem _",etype,"_ ... ",size(xc),xc
+call gsel%goutput(11)
+call galt%goutput(11)
+call goff%goutput(11)
+if(astop=='y'.or.astop=='Y') stop
+end subroutine gam_prob
+!
+!======================
+subroutine setup_base()
+!======================
+integer :: i,j
+real(kind=dp) :: u
+forall (i=1:ni) gp(i)%id=i
+forall (i=1:ni,j=1:2) gp(i)%htype(j)%junc(1)%anc=2*(i-1)+j
+if(ibda) then ! only 1 allele is tracked
+    wh(:)=1 
+    call random_number(u)
+    i=ceiling(u*real(2.*ni)) ! ibd allele i
+    wh(i)=2
+    write(11,*) '... ibd allele is ',i
+end if
+end subroutine setup_base
+! 
+!================================
+integer function crossovers(clen)
+! clen is chromosome length in Morgans
+!================================
+real(kind=dp), intent(in) :: clen
+integer :: nc
+real(kind=dp) :: u,x,y
+call random_number(u)
+x=exp(-clen)
+y=x
+nc=0
+do
+  if(x>u) exit
+  nc=nc+1
+  y=y*clen/real(nc)
+  x=x+y
+end do
+crossovers=nc
+end function crossovers
+!
+!================================
+subroutine map_crossings(clen,xc)
+!================================
+real(kind=dp), intent(in) :: clen
+real(kind=dp), dimension(:), intent(out) :: xc
+real(kind=dp) :: u
+integer :: i,j
+if(size(xc)>1) then
+    call random_number(u); xc(1)=u
+    next: do j=2,size(xc)-1
+        call random_number(u)
+        sort: do i=1,j-1 ! simple sort as array is short
+            if(u<xc(i)) then
+                xc(i+1:j)=xc(i:j-1)
+                xc(i)=u
+                cycle next
+            end if
+            xc(j)=u
+        end do sort
+    end do next
+end if
+xc(size(xc))=1.1d0 ! add a long stop 
+xc(:)=clen*xc(:) ! scale to chromosome length
+end subroutine map_crossings   
+! 
+!=================================
+subroutine check_poisson(clen,ich)
+!=================================
+integer, intent(in) :: ich
+real(kind=dp), intent(in) :: clen
+integer :: i
+real(kind=dp) :: y
+write(11,'(a/11f7.4)') 'check Poisson ... ',poisson_test(0:10)/sum(poisson_test)
+y=exp(-clen)
+poisson_test(0)=y
+do i=1,9
+    y=y*clen/real(i)
+    poisson_test(i)=y
+end do
+poisson_test(10)=1.d0-sum(poisson_test(0:9))
+write(11,'(a/11f7.4)') 'true Poisson  ... ',poisson_test(0:10)
+end subroutine check_poisson
 !    
 !=================================
 logical function equal_gamete(a,b)
 !=================================
-type(gamete) :: a,b
+type(gamete), intent(in) :: a,b
 integer :: i
 if(a%nj/=b%nj) then
     equal_gamete=.false.
@@ -26,7 +221,7 @@ end function equal_gamete
 !===================================
 logical function equal_junction(a,b)
 !===================================
-type(junction) :: a,b
+type(junction), intent(in) :: a,b
 if((a%anc==b%anc).and.(abs(a%pos-b%pos)<1.0d-6)) then
     equal_junction=.true.
 else
@@ -34,224 +229,15 @@ else
 end if
 end function equal_junction
 !
-!===================
-subroutine matings()
-!===================
-integer :: i
-real(kind=dp) :: u
-do i=1,ni ! for each newborn individual
-    select case (msys)
-    case('di') ! dioecious
-            call random_number(u) ! to choose a sire
-            gp(i)%ped(1)=ceiling(u*real(ni/2))
-            gp(i)%htype(1)=pass_gamete(gp(i)%ped(1))
-            call random_number(u) ! to choose a dam
-            gp(i)%ped(2)=(ni/2)+ceiling(u*real(ni/2)) ! choose a dam
-            gp(i)%htype(2)=pass_gamete(gp(i)%ped(2)) ! sample a gamete from dam
-        case('ms') ! monoecious selfing ... true random
-            call random_number(u) ! to choose a sire
-            gp(i)%ped(1)=ceiling(u*real(ni))
-            gp(i)%htype(1)=pass_gamete(gp(i)%ped(1))
-            call random_number(u) ! to choose a dam
-            gp(i)%ped(2)=ceiling(u*real(ni)) ! choose a dam
-            gp(i)%htype(2)=pass_gamete(gp(i)%ped(2)) ! sample a gamete from dam
-        case('mx') ! monoecious but no selfing
-            call random_number(u) ! to choose a sire
-            gp(i)%ped(1)=ceiling(u*real(ni))
-            gp(i)%htype(1)=pass_gamete(gp(i)%ped(1))
-            call random_number(u) ! to choose a dam
-            gp(i)%ped(2)=ceiling(u*real(ni-1)) ! choose a dam
-            if(gp(i)%ped(2)>=gp(i)%ped(1)) gp(i)%ped(2)=gp(i)%ped(2)+1 ! shift up to avoid and account for selfing
-            gp(i)%htype(2)=pass_gamete(gp(i)%ped(2)) ! sample a gamete from dam
-        case default
-            print *, 'error nominating mating system'; stop
-    end select
-end do
-end subroutine matings
-!
-!================================
-integer function crossovers(clen)
-! clen is chromosome length in Morgans
-!================================
-real(kind=dp), intent(in) :: clen
-integer :: nc
-real(kind=dp) :: u,x,y
-call random_number(u)
-x=exp(-clen)
-y=x
-nc=0
-do
-  if(x>u) exit ! no crossovers
-  nc=nc+1
-  y=y*clen/real(nc)
-  x=x+y
-end do
-crossovers=nc
-end function crossovers
-!
-!================================
-subroutine map_crossings(clen,xc)
-!================================
-real(kind=dp), intent(in) :: clen
-real(kind=dp), dimension(:), intent(out) :: xc
-real(kind=dp) :: u
-integer :: i,j
-call random_number(u); xc(1)=u
-if(size(xc)>1) then
-    next: do j=2,size(xc)
-        call random_number(u)
-        sort: do i=1,j-1
-            if(u<xc(i)) then
-                xc(i+1:j)=xc(i:j-1)
-                xc(i)=u
-                cycle next
-            end if
-            xc(j)=u
-        end do sort
-    end do next
-end if
-xc(:)=clen*xc(:) ! scale to chromosome length
-end subroutine map_crossings
-!
-!========================================
-type(gamete) function pass_gamete(parent)
-!========================================
-integer, intent(in) :: parent
-type(gamete) :: gsel,galt,goff
-integer :: m,jg,flag
-real(kind=dp), dimension(:), allocatable :: xc
-real(kind=dp) :: u
-goff=gnull
-flag=0
-if(pg_test) then 
-    call random_number(u) ! to determine whether this gamete is reported
-    if(u<2.d-3) then
-        flag=1
-        write(12,'(/a,5i6)') ' ... test ... ',ir,ig,parent,xgp(parent)%htype(:)%nj
-        call xgp(parent)%htype(1)%output(12)
-        call xgp(parent)%htype(2)%output(12)
-    end if
-end if
-m=crossovers(cl) ! find number of crossovers
-poisson_test(min(m,10))=poisson_test(min(m,10))+1.0d0   ! accumulate for Poisson check
-if(flag==1) write(12,*) ' ... crossovers ... ',m   ! for gamete check
-!
-call random_number(u) ! to determine gamete
-jg=1; if(u<0.5d0) jg=2
-gsel=xgp(parent)%htype(jg); galt=xgp(parent)%htype(3-jg)
-if(m==0) then ! easy
-    pass_gamete=gsel
-    if(flag==1) call gsel%output(12)
-else ! harder
-    allocate(xc(m))
-    call map_crossings(cl,xc) ! to obtain positions
-    if(flag==1) write(12,'(10f8.4)') xc(:)
-    call construct_gamete(gsel,galt,xc,goff)
-    if(.not.goff%ordered()) call goff_error(goff,gsel,galt,xc,'a')
-    pass_gamete=goff
-    deallocate(xc)
-end if
-if(flag==1) call goff%output(12)
-end function pass_gamete
-!
-!=============================================
-subroutine construct_gamete(gsel,galt,xc,goff)
-!=============================================
-type(gamete), intent(inout) :: gsel,galt
-real(kind=dp), dimension(:), intent(in) :: xc ! a list of crossovers
-type(gamete), intent(inout) :: goff
-integer :: jd,joff,jsel,jalt 
+!==============================
+subroutine ms_calc(gm,xp,js,ja)
+!==============================
+type(gamete), intent(inout) :: gm
 real(kind=dp) :: xp
-goff%junc(1)%pos=0.0d0
-goff%junc(1)%anc=gsel%junc(1)%anc
-jd=1; xp=xc(jd) ! jd counts the crossovers
-joff=1; jsel=2; jalt=2 ! set up so that jsel and jalt indicate positions ahead of joff
-gamete_scan: do
-    sel_cycle: do
-        if(gsel%junc(jsel)%pos<xp) then ! junction needs to be transferred to offspring
-            joff=joff+1
-            goff%junc(joff)=gsel%junc(jsel) ! transfers junction
-            jsel=jsel+1 ! ready to transfer next junction
-            if(jsel>gsel%nj) exit gamete_scan
-        else ! a crossover needs to be processed
-            exit sel_cycle
-        end if
-    end do sel_cycle
-    alt_cycle: do ! to keep alt in step
-        if(galt%junc(jalt)%pos<xp) then ! the junction is bypassed
-            jalt=jalt+1
-            if(jalt>galt%nj) call goff_error(goff,gsel,galt,xc,'b')
-        else ! junction still in play
-            exit alt_cycle
-        end if
-    end do alt_cycle
-    ! process the crossover
-    joff=joff+1 ! adds to junction count of offspring
-    goff%junc(joff)%pos=xc(jd) ! saves position
-    goff%junc(joff)%anc=galt%junc(jalt-1)%anc ! picks up the alternative gamete ancestor
-    call swap(gsel,galt) 
-    call swap(jsel,jalt)
-    ! prepare to move on
-    if(jd==size(xc)) then ! no more insertions
-        xp=maxval(gsel%junc(:)%pos)+0.01d0 ! so that all further junctions on the current gsel are transferred
-    else ! more crossovers to process
-        jd=jd+1
-        xp=xc(jd)
-    end if
-end do gamete_scan
-goff%nj=joff
-call goff%reduce()
-end subroutine construct_gamete
-!
-!=============================================
-subroutine goff_error(goff,gsel,galt,xc,etype)
-!=============================================
-type(gamete), intent(in) :: goff,gsel,galt
-real(kind=dp), dimension(:), intent(in) :: xc
-character(len=*) :: etype
-write(11,*) " ... pass_gamete problem _",etype,"_ ... ",size(xc),xc
-call gsel%output(11)
-call galt%output(11)
-call goff%output(11)
-stop
-end subroutine goff_error
-!
-!======================
-subroutine setup_base()
-!======================
-integer :: i,j
-real(kind=dp) :: u
-! parents are already set to 0
-forall (i=1:ni) gp(i)%htype(:)%nj=2
-forall (i=1:ni) gp(i)%htype(:)%junc(2)%pos=cl ! junc(1) is already set to 0.0d0
-if(ibda) then ! only 1 allele is tracked
-    forall (i=1:ni) gp(i)%htype(:)%junc(1)%anc=1 
-    call random_number(u); i=ceiling(u*real(ni)) ! individual i
-    call random_number(u); j=ceiling(u*2.) ! gamete j
-    gp(i)%htype(j)%junc(1)%anc=2
-else
-    j=0
-    do i=1,ni
-        j=j+1; gp(i)%htype(1)%junc(1)%anc=j
-        j=j+1; gp(i)%htype(2)%junc(1)%anc=j
-    end do
-end if
-end subroutine setup_base
-!
-!=================================
-subroutine check_poisson(clen,ich)
-!=================================
-integer :: ich,i
-real(kind=dp) :: clen,y
-write(11,'(a/11f7.4)') 'check Poisson ... ',poisson_test(0:10)/sum(poisson_test)
-y=exp(-clen)
-poisson_test(0)=y
-do i=1,9
-    y=y*clen/real(i)
-    poisson_test(i)=y
-end do
-poisson_test(10)=1.d0-sum(poisson_test(0:9))
-write(11,'(a/11f7.4)') 'true Poisson  ... ',poisson_test(0:10)
-end subroutine check_poisson
+integer, intent(in) :: js,ja
+integer :: ms
+ms=wh(js)-wh(ja)
+call gm%gappend( junction(xp,ms) )
+end subroutine ms_calc
 !
 end module utilities

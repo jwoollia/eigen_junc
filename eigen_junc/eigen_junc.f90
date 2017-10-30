@@ -10,15 +10,12 @@ character(len=4) :: arep
 character(len=10) :: rtime,now
 !
 inquire(file='junc_in.txt',exist=iex); 
-if(.not.iex) then 
-    print *, ' ... no parameter file! ... '; call exit
-else
-    call date_and_time(time=rtime)
-    open(11,file='junc_log_'//rtime(1:6)//'.txt')
-    open(14,file='junc_in.txt')
-end if
+if(.not.iex) stop ' ... no parameter file! '
+call date_and_time(time=rtime)
+open(11,file='junc_log_'//rtime(1:6)//'.txt')
 call seed_set(10,11)
 !
+open(14,file='junc_in.txt')
 read(14,*,iostat=ierr) nr; write(11,'(a,i8)')  ' ... replicates    ... ',nr
 read(14,*,iostat=ierr) ng; write(11,'(a,i8)')  ' ... generations   ... ',ng
 read(14,*,iostat=ierr) ni; write(11,'(a,i8)')  ' ... individuals   ... ',ni
@@ -34,29 +31,27 @@ read(14,*,iostat=ierr) ibda
 if(ibda) write(11,'(a)') ' ... tracking single gamete from base'
 !
 allocate(gp(ni),xgp(ni))
-jnull%pos=0.0d0; jnull%anc=0
-gnull%nj=0; gnull%junc(:)=jnull
-pnull%htype(:)=gnull; pnull%ped(:)=0
-!
+if(ibda) allocate(wh(2*ni))
 replicates: do ir=1,nr
-    xgp(:)=pnull
+    do i=1,ni 
+        call xgp(i)%inull(cl) ! set up xgp
+    end do
     write(arep,'(i4.4)') ir
     open(15,file='junc_rep'//trim(arep)//'_'//rtime(1:6)//'.txt')
     generations: do ig=0,ng
-        gp(:)=pnull
+        do i=1,ni 
+            call gp(i)%inull(cl) ! set up gp
+        end do
         if(ig==0) then ! it is the base
             call setup_base()
         else
             call matings()
         end if
         xgp=gp
-        if(max(maxval(gp(:)%htype(1)%nj),maxval(gp(:)%htype(2)%nj))>=size(gnull%junc)) then
-            print *, 'junctions per gamete exceeded gamete capacity ... increase capacity'; stop
-        end if
+        ! report
+        write(15,'(a,i4)') ' ... generation ... ',ig
         do i=1,ni
-            write(15,'(i3,3i4)') ig,i,gp(i)%htype(:)%nj
-            call write_gamete(gp(i)%htype(1),15)
-            call write_gamete(gp(i)%htype(2),15)
+            call gp(i)%ioutput(15,ibda)
         end do
     end do generations
     call date_and_time(time=now)
