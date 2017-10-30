@@ -15,29 +15,29 @@ do i=1,ni ! for each newborn individual
     gp(i)%id=i
     select case (msys)
     case('di') ! dioecious
-            call random_number(u) 
-            gp(i)%ped(1)=ceiling(u*real(ni/2)) ! choose a sire
-            call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
-            call random_number(u) ! to choose a dam
-            gp(i)%ped(2)=(ni/2)+ceiling(u*real(ni/2)) ! choose a dam
-            call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
-        case('ms') ! monoecious selfing ... true random
-            call random_number(u) ! to choose a sire
-            gp(i)%ped(1)=ceiling(u*real(ni))
-            call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
-            call random_number(u) ! to choose a dam
-            gp(i)%ped(2)=ceiling(u*real(ni)) ! choose a dam
-            call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
-        case('mx') ! monoecious but no selfing
-            call random_number(u) ! to choose a sire
-            gp(i)%ped(1)=ceiling(u*real(ni))
-            call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
-            call random_number(u) ! to choose a dam
-            gp(i)%ped(2)=ceiling(u*real(ni-1)) ! choose a dam
-            if(gp(i)%ped(2)>=gp(i)%ped(1)) gp(i)%ped(2)=gp(i)%ped(2)+1 ! shift up to avoid and account for selfing
-            call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
-        case default
-            stop ' ... stopping: error nominating mating system!'
+        call random_number(u) 
+        gp(i)%ped(1)=ceiling(u*real(ni/2)) ! choose a sire
+        call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
+        call random_number(u) ! to choose a dam
+        gp(i)%ped(2)=(ni/2)+ceiling(u*real(ni/2)) ! choose a dam
+        call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
+    case('ms') ! monoecious selfing ... true random
+        call random_number(u) ! to choose a sire
+        gp(i)%ped(1)=ceiling(u*real(ni))
+        call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
+        call random_number(u) ! to choose a dam
+        gp(i)%ped(2)=ceiling(u*real(ni)) ! choose a dam
+        call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
+    case('mx') ! monoecious but no selfing
+        call random_number(u) ! to choose a sire
+        gp(i)%ped(1)=ceiling(u*real(ni))
+        call pass_gamete(gp(i)%ped(1),gp(i)%htype(1),gp(i)%vmend(1))
+        call random_number(u) ! to choose a dam
+        gp(i)%ped(2)=ceiling(u*real(ni-1)) ! choose a dam
+        if(gp(i)%ped(2)>=gp(i)%ped(1)) gp(i)%ped(2)=gp(i)%ped(2)+1 ! shift up to avoid and account for selfing
+        call pass_gamete(gp(i)%ped(2),gp(i)%htype(2),gp(i)%vmend(2))
+    case default
+        stop ' ... stopping: error nominating mating system!'
     end select
 end do
 end subroutine matings
@@ -179,7 +179,8 @@ if(size(xc)>1) then
         end do sort
     end do next
 end if
-xc(size(xc))=1.1d0 ! add a long stop 
+xc(size(xc))=1.1d0 ! add a long stop
+xc(:)=xc(:)-0.5d0 ! centre the distribution
 xc(:)=clen*xc(:) ! scale to chromosome length
 end subroutine map_crossings   
 ! 

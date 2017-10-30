@@ -40,6 +40,7 @@ integer, dimension(:), allocatable :: wh ! look up array mapping single alleles 
 type(info), dimension(:), allocatable :: gp,xgp ! holds data on individuals within replicate and generation
 real(kind=dp), dimension(0:10) :: poisson_test ! testing Poisson sampling
 real(kind=dp) :: cl
+real(kind=dp), dimension(:), :: ef,ea,av
 character(len=2) :: msys ! mating system
 logical :: pg_test ! .true. initiates sampling of constructed gametes for checking
 logical :: ibda ! .true. labels only ancestral gamete 2, remainder set to 1
@@ -177,8 +178,8 @@ class(gamete), intent(inout) :: self
 real(kind=dp), intent(in) :: clen
 self%nj=2
 self%clen=clen
-call self%junc(1)%jdefine(0.d0,0)
-call self%junc(2)%jdefine(clen,huge(0))
+call self%junc(1)%jdefine(-clen/2.d0,0)
+call self%junc(2)%jdefine(clen/2.d0,huge(0))
 end subroutine null_gamete
 !
 !==============================
