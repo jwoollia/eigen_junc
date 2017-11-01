@@ -1,6 +1,7 @@
 module utilities
 use parameters
 use sort_kit
+use fourier
 implicit none
 integer, parameter, private :: dp=kind(0.0d0)
 !
@@ -52,8 +53,8 @@ integer :: nc,jd,jg,joff,jmen,jsel,jalt,jact
 real(kind=dp), dimension(:), allocatable :: xc
 real(kind=dp) :: u
 ! set up gametes
-call goff%gnull(cl)
-if(ibda) call gmen%gnull(cl)
+call goff%gnull(cl,.true.)
+if(ibda) call gmen%gnull(cl,.false.)
 ! set up recombinations
 nc=crossovers(cl) ! find number of crossovers
 poisson_test(min(nc,10))=poisson_test(min(nc,10))+1.0d0 ! accumulate for Poisson check
@@ -64,39 +65,45 @@ call random_number(u)
 jg=1; if(u<0.5d0) jg=2
 gsel=xgp(parent)%htype(jg); galt=xgp(parent)%htype(3-jg)
 ! initiate goff & gmen if required
-goff%junc(1)%anc=gsel%junc(1)%anc
-if(ibda) gmen%junc(1)%anc=wh(gsel%junc(1)%anc)-wh(galt%junc(1)%anc)
+goff%jct(1)%anc=gsel%jct(1)%anc
+if(ibda) gmen%jct(1)%anc=wh(gsel%jct(1)%anc)-wh(galt%jct(1)%anc)
 ! initiate transfer
 jsel=2; jalt=2; jd=1 ! set up so that jsel and jalt indicate positions ahead of joff, jd counts the breaks
 gamete_scan: do     
     if(jsel>=gsel%nj.and.jalt>=galt%nj.and.jd>=size(xc)) exit gamete_scan ! only at end the counters will all be at maximum values ... each array has precisely one value >= cl
-    jact=sum(minloc((/gsel%junc(jsel)%pos,galt%junc(jalt)%pos,xc(jd)/)))
+    jact=sum(minloc((/gsel%jct(jsel)%pos,galt%jct(jalt)%pos,xc(jd)/)))
     select case (jact)
     case (1)
-        call goff%gappend(gsel%junc(jsel)) ! transfers junction
-        if(equal_junction(gsel%junc(jsel),galt%junc(jalt))) jalt=jalt+1 ! keep jalt ahead
-        if(ibda) call ms_calc(gmen,gsel%junc(jsel)%pos,gsel%junc(jsel)%anc,galt%junc(jalt-1)%anc) 
+        call goff%gappend(gsel%jct(jsel)) ! transfers junction
+        if(equal_junction(gsel%jct(jsel),galt%jct(jalt))) jalt=jalt+1 ! keep jalt ahead
+        if(ibda) call ms_calc(gmen,gsel%jct(jsel)%pos,gsel%jct(jsel)%anc,galt%jct(jalt-1)%anc) 
         jsel=jsel+1 ! move on to next junction  
     case (2) ! junction in alternative, update gmen, not goff
-        if(equal_junction(gsel%junc(jsel),galt%junc(jalt))) jsel=jsel+1 ! keep jsel ahead
-        if(ibda) call ms_calc(gmen,galt%junc(jalt)%pos,gsel%junc(jsel-1)%anc,galt%junc(jalt)%anc) 
+        if(equal_junction(gsel%jct(jsel),galt%jct(jalt))) jsel=jsel+1 ! keep jsel ahead
+        if(ibda) call ms_calc(gmen,galt%jct(jalt)%pos,gsel%jct(jsel-1)%anc,galt%jct(jalt)%anc) 
         jalt=jalt+1 ! move on to next alternative junction 
     case (3) ! crossover
         call swap(gsel,galt)
         call swap(jsel,jalt)
-        ! junction formed only if different, i.e. if(gsel%junc(jsel-1)%anc/=galt%junc(jalt-1)%anc) but this is ignored
-        call goff%gappend( junction(xc(jd),gsel%junc(jsel-1)%anc) )
-        if(ibda) call ms_calc(gmen,xc(jd),gsel%junc(jsel-1)%anc,galt%junc(jalt-1)%anc)  ! note both jsel and jalt are ahead
+        ! junction formed only if different, i.e. if(gsel%jct(jsel-1)%anc/=galt%jct(jalt-1)%anc) but this is ignored
+        call goff%gappend( junction(xc(jd),gsel%jct(jsel-1)%anc) )
+        if(ibda) call ms_calc(gmen,xc(jd),gsel%jct(jsel-1)%anc,galt%jct(jalt-1)%anc)  ! note both jsel and jalt are ahead
         jd=jd+1
     end select
 end do gamete_scan
 call goff%greduce()
 if(.not.goff%gordered()) call gam_prob(goff,gsel,galt,xc,'a','y')
-if(ibda) call gmen%greduce()
+call goff%gfc(ew,ep,eb,wh)
+pnet(:)=pnet(:)+goff%gprofile(xnet,wh)/real(2*ni)
+eave(:)=eave(:)+goff%fc(:)/real(2*ni)
+if(ibda) then 
+    call gmen%greduce()
+    call gmen%gfc(ew,ep,eb,wh)
+end if 
 ! monitoring report    
 if(pg_test) then 
     call random_number(u) ! to determine whether this gamete is reported
-    if(u<2.d-2) then
+    if(u<ptest) then
         write(12,'(/a,7i6)') ' ... test ... ',ir,ig,parent,xgp(parent)%htype(:)%nj
         call xgp(parent)%htype(1)%goutput(12)
         call xgp(parent)%htype(2)%goutput(12)
@@ -127,15 +134,15 @@ subroutine setup_base()
 !======================
 integer :: i,j
 real(kind=dp) :: u
-forall (i=1:ni) gp(i)%id=i
-forall (i=1:ni,j=1:2) gp(i)%htype(j)%junc(1)%anc=2*(i-1)+j
-if(ibda) then ! only 1 allele is tracked
-    wh(:)=1 
-    call random_number(u)
-    i=ceiling(u*real(2.*ni)) ! ibd allele i
-    wh(i)=2
-    write(11,*) '... ibd allele is ',i
-end if
+do i=1,ni
+    gp(i)%id=i
+    do j=1,2
+        gp(i)%htype(j)%jct(1)%anc=2*(i-1)+j
+        call gp(i)%htype(j)%gfc(ew,ep,eb,wh)
+        pnet(:)=pnet(:)+gp(i)%htype(j)%gprofile(xnet,wh)/real(2*ni)
+        eave(:)=eave(:)+gp(i)%htype(j)%fc(:)/real(2*ni)
+    end do
+end do
 end subroutine setup_base
 ! 
 !================================
@@ -212,7 +219,7 @@ if(a%nj/=b%nj) then
 else
     equal_gamete=.true.
     junctions: do i=1,a%nj
-        if(equal_junction(a%junc(i),b%junc(i))) cycle
+        if(equal_junction(a%jct(i),b%jct(i))) cycle
         equal_gamete=.false.
         exit junctions
     end do junctions
