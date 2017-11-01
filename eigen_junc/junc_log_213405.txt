@@ -1,7 +1,0 @@
-  ... random number seed ...       155160      497956
- ... replicates    ...        2
- ... generations   ...       40
- ... individuals   ...       10
- ... length (M)    ...   0.50
- ... mating system ... ms
-213405.451 ... finished replicate ...     1

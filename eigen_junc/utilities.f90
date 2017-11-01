@@ -8,7 +8,7 @@ integer, parameter, private :: dp=kind(0.0d0)
 contains
 !
 !===================
-subroutine matings()            ! change to subroutine
+subroutine matings()
 !===================
 integer :: i
 real(kind=dp) :: u

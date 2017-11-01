@@ -3,5 +3,7 @@
 4		individuals
 1.0		chromosome length
 ms		mating system, di or dp or ms or mx
-.true.		test passing of gametes 
-.true.		track only single base allele
+.true.	test passing of gametes 
+.true.	track only single base allele
+30		eigenfunctions used
+100		positions in the net

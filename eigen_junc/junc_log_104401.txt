@@ -1,0 +1,15 @@
+  ... random number seed ...       965096      808796
+ ... replicates     ...        1
+ ... generations    ...       10
+ ... individuals    ...        4
+ ... length (M)     ...   1.00
+ ... eigenfunctions ...     30
+ ... mating system  ... ms
+ ... gametes are being sampled for checking construction
+ ... tracking single gamete from base
+ ... ibd allele is            3
+104401.105 ... finished replicate ...     1
+check Poisson ... 
+ 0.4250 0.3625 0.1625 0.0500 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
+true Poisson  ... 
+ 0.3679 0.3679 0.1839 0.0613 0.0153 0.0031 0.0005 0.0001 0.0000 0.0000 0.0000

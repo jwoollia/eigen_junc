@@ -1,0 +1,52 @@
+  ... random number seed ...       984858       96806
+ ... replicates    ...       20
+ ... generations   ...       10
+ ... individuals   ...        4
+ ... length (M)    ...   1.00
+ ... mating system ... ms
+ ... gametes are being sampled for checking construction
+ ... tracking single gamete from base
+ ... ibd allele is            1
+144852.669 ... finished replicate ...     1
+ ... ibd allele is            8
+144852.683 ... finished replicate ...     2
+ ... ibd allele is            1
+144852.701 ... finished replicate ...     3
+ ... ibd allele is            3
+144852.718 ... finished replicate ...     4
+ ... ibd allele is            4
+144852.737 ... finished replicate ...     5
+ ... ibd allele is            1
+144852.755 ... finished replicate ...     6
+ ... ibd allele is            3
+144852.774 ... finished replicate ...     7
+ ... ibd allele is            5
+144852.788 ... finished replicate ...     8
+ ... ibd allele is            1
+144852.801 ... finished replicate ...     9
+ ... ibd allele is            5
+144852.816 ... finished replicate ...    10
+ ... ibd allele is            5
+144852.828 ... finished replicate ...    11
+ ... ibd allele is            4
+144852.839 ... finished replicate ...    12
+ ... ibd allele is            6
+144852.852 ... finished replicate ...    13
+ ... ibd allele is            5
+144852.869 ... finished replicate ...    14
+ ... ibd allele is            7
+144852.882 ... finished replicate ...    15
+ ... ibd allele is            4
+144852.895 ... finished replicate ...    16
+ ... ibd allele is            3
+144852.907 ... finished replicate ...    17
+ ... ibd allele is            3
+144852.920 ... finished replicate ...    18
+ ... ibd allele is            1
+144852.933 ... finished replicate ...    19
+ ... ibd allele is            5
+144852.958 ... finished replicate ...    20
+check Poisson ... 
+ 0.3613 0.3738 0.1825 0.0675 0.0125 0.0025 0.0000 0.0000 0.0000 0.0000 0.0000
+true Poisson  ... 
+ 0.3679 0.3679 0.1839 0.0613 0.0153 0.0031 0.0005 0.0001 0.0000 0.0000 0.0000

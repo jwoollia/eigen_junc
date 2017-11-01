@@ -15,7 +15,7 @@ inquire(file='junc_in.txt',exist=iex)
 if(.not.iex) stop ' ... no parameter file! '
 call date_and_time(time=rtime)
 open(11,file='junc_log_'//rtime(1:6)//'.txt')
-call seed_set(10,11)
+call seed_set(11)
 do i=1,1000 ! burn in
     call random_number(u)
 end do

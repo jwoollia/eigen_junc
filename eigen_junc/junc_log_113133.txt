@@ -1,8 +1,0 @@
-  ... random number seed ...       684549      976665
- ... replicates    ...        1
- ... generations   ...       10
- ... individuals   ...        4
- ... length (M)    ...   1.00
- ... mating system ... ms
- ... gametes are being sampled for checking construction
- ... tracking single gamete from base

@@ -1,0 +1,9 @@
+  ... random number seed ...        57618      899590
+ ... replicates     ...        1
+ ... generations    ...       10
+ ... individuals    ...        4
+ ... length (M)     ...   1.00
+ ... eigenfunctions ...     30
+ ... mating system  ... 30
+ ... tracking single gamete from base
+ ... ibd allele is            6

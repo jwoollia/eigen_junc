@@ -1,0 +1,31 @@
+  ... random number seed ...       516484      904446
+ ... replicates    ...       20
+ ... generations   ...       10
+ ... individuals   ...        4
+ ... length (M)    ...   1.00
+ ... mating system ... ms
+ ... gametes are being sampled for checking construction
+190300.932 ... finished replicate ...     1
+190300.949 ... finished replicate ...     2
+190300.970 ... finished replicate ...     3
+190300.986 ... finished replicate ...     4
+190301.001 ... finished replicate ...     5
+190301.016 ... finished replicate ...     6
+190301.031 ... finished replicate ...     7
+190301.049 ... finished replicate ...     8
+190301.063 ... finished replicate ...     9
+190301.080 ... finished replicate ...    10
+190301.095 ... finished replicate ...    11
+190301.112 ... finished replicate ...    12
+190301.128 ... finished replicate ...    13
+190301.143 ... finished replicate ...    14
+190301.162 ... finished replicate ...    15
+190301.183 ... finished replicate ...    16
+190301.199 ... finished replicate ...    17
+190301.214 ... finished replicate ...    18
+190301.227 ... finished replicate ...    19
+190301.242 ... finished replicate ...    20
+check Poisson ... 
+ 0.3575 0.3738 0.1800 0.0675 0.0163 0.0037 0.0013 0.0000 0.0000 0.0000 0.0000
+true Poisson  ... 
+ 0.3679 0.3679 0.1839 0.0613 0.0153 0.0031 0.0005 0.0001 0.0000 0.0000 0.0000
