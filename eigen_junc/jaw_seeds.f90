@@ -21,7 +21,7 @@ if(iexist) then ! read seed
     read(sunit,*,iostat=ierr) iseed ! reading the seed
     if(ierr<0) stop 'subroutine seed_set: error reading seed from seed channel' ! stopping if errors
     call random_seed(put=iseed) ! setting the seed
-    rewind(sunit) ! preparing for next seed
+    rewind(sunit) ! rewind the standard unit for next seed
 else ! if there is no file 
     call random_seed(get=iseed) ! get a seed
     open(newunit=sunit,file='jaw_seed.txt',status='new',action='readwrite') ! create the standard unit for next seed
@@ -30,7 +30,7 @@ end if
 if(present(runit)) then ! reporting of current seed is expected
     inquire(runit,opened=iopen) ! whether the reporting unit is open
     if(.not.iopen) then ! not much can be done
-        print *, 'subroutine seed_set: report channel number is unopened, seed not reported'
+        print *, 'subroutine seed_set: reporting file is unopened, seed not preserved ... ',iseed
     else ! report the seed
         write(runit,*) '... random number seed ... ',iseed
     end if
